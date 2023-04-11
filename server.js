@@ -36,19 +36,28 @@ app.use(express.json());
 app.use(cors());
 
 app.get("/haikus", (req, res) => {
-  models.Haiku.findAll({
-    order: [["id", "DESC"]],
-  })
-    .then((result) => {
-      console.log("HAIKUS: ", result);
-      res.send({
-        haikus: result,
-      });
+  const page = Number(req.query.page) || 1; // default 1
+  const pageSize = Number(req.query.limit) || 9; // default 9
+
+  models.Haiku.count().then((count) => {
+    const totalPages = Math.ceil(count / pageSize);
+    return models.Haiku.findAll({
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+      order: [["id", "DESC"]],
     })
-    .catch((error) => {
-      console.error(error);
-      res.send("error");
-    });
+      .then((result) => {
+        console.log("HAIKUS: ", result);
+        res.send({
+          haikus: result,
+          totalPages,
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+        res.send("error");
+      });
+  });
 });
 
 app.post("/haikus", async (req, res) => {
