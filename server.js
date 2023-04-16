@@ -60,6 +60,42 @@ app.get("/haikus", (req, res) => {
   });
 });
 
+app.delete("/haikus/:id", (req, res) => {
+  const params = req.params;
+  const { id } = params;
+  const delPageSize = 9;
+
+  models.Haiku.findOne({
+    where: {
+      id,
+    },
+  })
+    .then((result) => {
+      models.Haiku.destroy({
+        where: {
+          id,
+        },
+      })
+        .then(() => {
+          models.Haiku.count().then((count) => {
+            const delTotalPages = Math.ceil(count / delPageSize);
+            res.send({
+              result: true,
+              totalPages: delTotalPages,
+            });
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          res.status(500).send("エラーが発生しました。");
+        });
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("エラーが発生しました。");
+    });
+});
+
 app.post("/haikus", async (req, res) => {
   const body = req.body;
   const { author, words, color1, color2 } = body;
@@ -94,6 +130,21 @@ app.post("/haikus", async (req, res) => {
   }
 });
 
+app.post("/admin", (req, res) => {
+  const body = req.body;
+  const { password } = body;
+
+
+  if (!password) {
+    res.status(400).send("Please fill out all fields.");
+  }
+
+  if (password === process.env.PASSWORD) {
+    res.status(200).json({ password_check: true });
+  } else {
+    res.status(401).json({ password_check: false, message: password });
+  }
+});
 app.listen(port, () => {
   console.log("サーバーが稼働しています。");
   models.sequelize
